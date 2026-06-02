@@ -24,7 +24,7 @@ headers={
 smtp_host = "smtp.gmail.com"
 smtp_port = 587
 smtp_user = "tiny.excellencer@gmail.com"
-smtp_pass = "77804Ada"  # Replace with your actual password or use an app-specific password
+smtp_pass = "icgkckluwhpxjxxa" 
 to_email = "tiny.excellencer@gmail.com"
 
 # Folder/file to remember last seen filing
@@ -45,8 +45,10 @@ def send_email(subject, body):
 
     msg.attach(MIMEText(body, "plain"))
 
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+        server.ehlo()
         server.starttls()
+        server.ehlo()
         server.login(smtp_user, smtp_pass)
         server.send_message(msg)
 
