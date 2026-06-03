@@ -1,7 +1,10 @@
 import json
 import os
+from pathlib import Path
+
 import requests
 import smtplib
+import yaml
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart 
 
@@ -9,110 +12,153 @@ from email.mime.multipart import MIMEMultipart
 # Configuration
 # ===========================
 
-# NVIDIA CIK
-cik="0001045810"
+# Watchlist CIK 
+WATCHLIST_FILE = "watchlist.yaml"
+STATE_FILE = "state/last_seen.json"
+USER_AGENT = "DeepTechAgent/1.0 (contact@example.com)"
 
-# SEC request settings
-url=f"https://data.sec.gov/submissions/CIK{cik}.json" 
-headers={
-    "User-Agent": "AdaHo (tiny.excellencer@gmail.com)",
-    "Accept-Encoding": "gzip, deflate",
-    "Host": "data.sec.gov"
-}
-
-# Email settings (temporory local test version)
-smtp_host = "smtp.gmail.com"
-smtp_port = 587
-smtp_user = "tiny.excellencer@gmail.com"
-smtp_pass = "icgkckluwhpxjxxa" 
-to_email = "tiny.excellencer@gmail.com"
-
-# Folder/file to remember last seen filing
-state_file = "state/last_seen.json"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASS = os.getenv("SMTP_PASS")
+TO_EMAIL = os.getenv("TO_EMAIL")
 
 # High-signal forms only
 high_signal_forms = {"8-K", "10-Q", "10-K"}
 
+# ===========================
+# HELPERS
+# ===========================
+def load_watchlist():
+    with open(WATCHLIST_FILE, "r") as f:
+        data = yaml.safe_load(f)
+    return data["tickers"]
+
+def load_state():
+    state_path = Path(STATE_FILE)
+    if not state_path.exists():
+        return {}
+    with open(state_path, "r") as f:
+        return json.load(f)
+    
+
+def save_state(state):
+     state_path = Path(STATE_FILE)
+     state_path.parent.mkdir(parents=True, exist_ok=True)
+     with open(state_path, "w") as f:
+         json.dump(state, f, indent=2)
 
 # ===========================
 # Email Function
 # ===========================
 def send_email(subject, body):
     msg = MIMEMultipart()
-    msg["From"] = smtp_user
-    msg["To"] = to_email
+    msg["From"] = SMTP_USER
+    msg["To"] = TO_EMAIL
     msg["Subject"] = subject
-
     msg.attach(MIMEText(body, "plain"))
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
         server.ehlo()
         server.starttls()
         server.ehlo()
-        server.login(smtp_user, smtp_pass)
+        server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
 
 
-# ===========================
-# Get Data from SEC
-# ===========================
-response = requests.get(url, headers=headers, timeout=30)
-response.raise_for_status()  
+def fetch_latest_high_signal_filing(cik):
+    url = f"https://data.sec.gov/submissions/CIK{cik}.json"
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept-Encoding": "gzip, deflate",
+        "Host": "data.sec.gov",
+    }
+    
+    response = requests.get(url, headers=headers, timeout=30)
+    response.raise_for_status()  
+    
+    data=response.json()
+    recent=data["filings"]["recent"]
 
-data = response.json()
-recent=data["filings"]["recent"]    
+    forms=recent["form"]
+    dates=recent["filingDate"]
 
-forms=recent["form"]
-dates=recent["filingDate"]
-
-latest_filing = None
-
-# Find the first high-signal filing
-for form, date in zip(forms, dates):
-    if form in high_signal_forms:
-        latest_filing = {"form":form, "date":date} 
-        break   
-
-if latest_filing is None:
-    print("No high-signal filings found.")
-    exit()
-
-print("Latest high-signal filing from SEC:")
-print(latest_filing)
+    for form, date in zip(forms, dates):
+        if form in high_signal_forms:
+            return {"form": form, "date": date}
+        
+    return None 
 
 # ===========================
-# Load previous state
+# Main
 # ===========================
-previous_filing = None
-if os.path.exists(state_file):
-    with open(state_file, "r") as f:
-        previous_filing = json.load(f)  
+def main():
+    watchlist = load_watchlist()
+    state = load_state() 
 
-# ===========================
-# Compare + Alert
-# ===========================
-if previous_filing == latest_filing:
-    print("No new filing detected")
-else:
-    print("New filings detected!")
-    print("Previous:", previous_filing)
-    print("Current:", latest_filing)
+    print("Checking watchlist ...\n ")
 
-    subject = f"[SEC Alert] NVIDIA new filing: {latest_filing['form']}"
-    body = (
-        f"New high-signal SEC filing detected for NVIDIA.:\n\n"
-        f"Form: {latest_filing['form']}\n"
-        f"Date: {latest_filing['date']}\n\n"
-        f"Previous filing:\n{previous_filing}\n"
-        f"Current filing:\n{latest_filing}\n"
-    )
+    new_alerts = []
 
-    send_email(subject, body)
-    print("Email sent successfully!")
+    # Loop through watchlist and check for new filings
+    for company in watchlist:
+        ticker = company["ticker"]
+        name = company["name"]
+        cik = company["cik"]
 
-    # Save the new filing
-    with open(state_file, "w") as f:
-        json.dump(latest_filing, f, indent=2)
+        print(f"Checking {ticker} ({name}) ...")
 
-for i in range(5):
-    print(f"{forms[i]} - {dates[i]}")
+        latest_filing = fetch_latest_high_signal_filing(cik)
+
+        if latest_filing is None:
+            print(f"No high-signal filings found for {ticker}.\n")
+            continue
+
+        previous_filing = state.get(ticker) 
+
+        print(f"Latest filing: {latest_filing}")
+
+        if previous_filing == latest_filing:
+            print(f"No new filing detected for {ticker}.")
+        else:
+            print(f"New filing detected for {ticker}!")
+            print(f"Previous: {previous_filing}")
+            print(f"Current: {latest_filing}")
+
+        # Only collect alerts here
+        new_alerts.append({
+            "ticker": ticker,
+            "name": name,
+            "previous": previous_filing,  
+            "current": latest_filing
+        })
+
+        # Update state for this stock
+        state[ticker] = latest_filing
+
+        print()
+
+    # Save updated state ONCE after the loop
+    save_state(state)
+    # Send one comnbined email if anything new
+    if new_alerts:
+        subject = f"[SEC Alerts]{len(new_alerts)} stock(s) with new filing(s)"
+        lines = []
+        lines.append("New high-signal SEC filings detected:\n")
+
+    for alert in new_alerts:
+        lines.append(f"{alert['ticker']} - ({alert['name']})")
+        lines.append(
+            f"  Current: {alert['current']['form']} on {alert['current']['date']}")
+        lines.append(f"  Previous: {alert['previous']}")
+        lines.append("")
+
+        body = "\n".join(lines)
+
+        send_email(subject, body)
+        print("Email sent successfully")
+    else:
+        print("No new filings across the watchlist.")
+
+if __name__ == "__main__":
+    main()

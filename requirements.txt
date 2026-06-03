@@ -1,4 +1,4 @@
 requests
-feedparser
 pyyaml
+feedparser
 python-dateutil 

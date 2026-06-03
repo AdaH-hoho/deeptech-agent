@@ -1,0 +1,25 @@
+tickers:
+  - ticker: NVDA
+    name: NVIDIA Corporation
+    cik: "0001045810" 
+
+  - ticker: AAPL
+    name: Apple 
+    cik: "0000320193"
+
+  - ticker: MRNA
+    name: Moderna
+    cik: "0001682852"
+
+  - ticker: LLY
+    name: Eli Lilly 
+    cik: "0000059478"
+
+  - ticker: PLTR
+    name: Palantir Technologies
+    cik: "0001321655" 
+
+  - ticker: TEM 
+    name: Tempus AI
+    cik: "0001717115"
+  
