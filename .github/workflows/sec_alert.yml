@@ -1,0 +1,29 @@
+name: SEC Filing Alert
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  run-sec-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version:"3.11"
+
+      - name: Install dependencies
+        uses: pip install -r requirements.txt
+        
+      - name: Run SEC alert script
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          USER_AGENT: ${{ secrets.USER_AGENT }}
+        run: python src/main.py
+        
