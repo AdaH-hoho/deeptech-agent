@@ -10,6 +10,9 @@ jobs:
   run-sec-alert:
     runs-on: ubuntu-latest
 
+    permissions: 
+      contents: write
+
     steps:
       - name: checkout repo
         uses: actions/checkout@v6
@@ -29,4 +32,12 @@ jobs:
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
           USER_AGENT: ${{ secrets.USER_AGENT }}
         run: python src/main.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/last_seen.json
+          git diff --cached --quiet || git commit -m "Update filing state"
+          git push
         
