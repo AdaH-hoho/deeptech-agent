@@ -1,0 +1,45 @@
+name: Daily Filing Digest
+
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: "35 21 * * 1-5"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  run-daily-digest:
+    runs-on: ubbuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily digest script
+        env:
+          RUN_MODE: digest
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          USER_AGENT: ${{ secrets.USER_AGENT }}
+        run: python src/main.py
+
+
+
+
+
+
+        
+  
