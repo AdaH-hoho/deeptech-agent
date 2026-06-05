@@ -37,6 +37,7 @@ jobs:
         
       - name: Run SEC alert script
         env:
+          RUN_MODE: alert
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
