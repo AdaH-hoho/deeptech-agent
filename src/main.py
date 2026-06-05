@@ -22,6 +22,7 @@ SMTP_PORT = 587
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 TO_EMAIL = os.getenv("TO_EMAIL")
+USER_AGENT = os.getenv("USER_AGENT")
 
 # High-signal forms only
 high_signal_forms = {"8-K", "10-Q", "10-K"}
@@ -82,10 +83,22 @@ def fetch_latest_high_signal_filing(cik):
 
     forms=recent["form"]
     dates=recent["filingDate"]
+    accessions = recent["accessionNumber"]
+    primary_docs = recent["primaryDocument"]
 
-    for form, date in zip(forms, dates):
+    for form, date, accession, primary_doc in zip(forms, dates, accessions, primary_docs):
         if form in high_signal_forms:
-            return {"form": form, "date": date}
+            accession_nodash = accession.replace("-", "")
+            cik_ink = str(int(cik))  # Remove leading zeros for URL 
+            filing_link = f"https://www.sec.gov/Archives/edgar/data/{cik_ink}/{accession_nodash}/{primary_doc}"
+
+            return {
+                "form": form, 
+                "date": date,
+                "accession": accession,
+                "primary_doc": primary_doc,
+                "link": filing_link
+            }
         
     return None 
 
@@ -143,15 +156,18 @@ def main():
     # Send one comnbined email if anything new
     if new_alerts:
         subject = f"[SEC Alerts]{len(new_alerts)} stock(s) with new filing(s)"
+        
         lines = []
         lines.append("New high-signal SEC filings detected:\n")
 
-    for alert in new_alerts:
-        lines.append(f"{alert['ticker']} - ({alert['name']})")
-        lines.append(
-            f"  Current: {alert['current']['form']} on {alert['current']['date']}")
-        lines.append(f"  Previous: {alert['previous']}")
-        lines.append("")
+        for alert in new_alerts:
+            lines.append(f"{alert['ticker']} - ({alert['name']})")
+            lines.append(
+                f"  Current: {alert['current']['form']} on {alert['current']['date']}"
+            )
+            lines.append(f"  Link: {alert['current']['link']}")
+            lines.append(f"  Previous: {alert['previous']}")
+            lines.append("")
 
         body = "\n".join(lines)
 

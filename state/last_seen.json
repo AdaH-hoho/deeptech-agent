@@ -1,26 +1,44 @@
 {
   "NVDA": {
     "form": "10-Q",
-    "date": "2026-05-20"
+    "date": "2026-05-20",
+    "accession": "0001045810-26-000052",
+    "primary_doc": "nvda-20260426.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm"
   },
   "AAPL": {
     "form": "10-Q",
-    "date": "2026-05-01"
+    "date": "2026-05-01",
+    "accession": "0000320193-26-000013",
+    "primary_doc": "aapl-20260328.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000013/aapl-20260328.htm"
   },
   "MRNA": {
     "form": "8-K",
-    "date": "2026-05-11"
+    "date": "2026-05-11",
+    "accession": "0001682852-26-000101",
+    "primary_doc": "mrna-20260506.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000101/mrna-20260506.htm"
   },
   "LLY": {
     "form": "8-K",
-    "date": "2026-05-20"
+    "date": "2026-05-20",
+    "accession": "0001193125-26-232707",
+    "primary_doc": "d148580d8k.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/59478/000119312526232707/d148580d8k.htm"
   },
   "PLTR": {
     "form": "10-Q",
-    "date": "2026-05-05"
+    "date": "2026-05-05",
+    "accession": "0001321655-26-000028",
+    "primary_doc": "pltr-20260331.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000028/pltr-20260331.htm"
   },
   "TEM": {
     "form": "8-K",
-    "date": "2026-05-22"
+    "date": "2026-05-22",
+    "accession": "0001193125-26-236814",
+    "primary_doc": "d109019d8k.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1717115/000119312526236814/d109019d8k.htm"
   }
 }
