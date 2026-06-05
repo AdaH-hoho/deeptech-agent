@@ -1,6 +1,9 @@
 import json
 import os
 from pathlib import Path
+import time 
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 import smtplib
@@ -12,20 +15,19 @@ from email.mime.multipart import MIMEMultipart
 # Configuration
 # ===========================
 
-# Watchlist CIK 
 WATCHLIST_FILE = "watchlist.yaml"
 STATE_FILE = "state/last_seen.json"
-USER_AGENT = "DeepTechAgent/1.0 (contact@example.com)"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 TO_EMAIL = os.getenv("TO_EMAIL")
-USER_AGENT = os.getenv("USER_AGENT")
+USER_AGENT = os.getenv("USER_AGENT") or "DeepTechAgent/1.0 (tiny.excellencer@gmail.com)"
+RUN_MODE = os.getenv("RUN_MODE", "alert").lower()  
 
-# High-signal forms only
 high_signal_forms = {"8-K", "10-Q", "10-K"}
+
 
 # ===========================
 # HELPERS
@@ -42,7 +44,6 @@ def load_state():
     with open(state_path, "r") as f:
         return json.load(f)
     
-
 def save_state(state):
      state_path = Path(STATE_FILE)
      state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,11 +73,16 @@ def fetch_latest_high_signal_filing(cik):
     headers = {
         "User-Agent": USER_AGENT,
         "Accept-Encoding": "gzip, deflate",
+        "Accept": "application/json",
         "Host": "data.sec.gov",
     }
     
     response = requests.get(url, headers=headers, timeout=30)
-    response.raise_for_status()  
+    
+    if response.status_code != 200:
+        print(f"SEC request failed for CIK {cik}: {response.status_code}")
+        print("Response review:", response.text[:200])
+        return None  
     
     data=response.json()
     recent=data["filings"]["recent"]
@@ -90,7 +96,10 @@ def fetch_latest_high_signal_filing(cik):
         if form in high_signal_forms:
             accession_nodash = accession.replace("-", "")
             cik_ink = str(int(cik))  # Remove leading zeros for URL 
-            filing_link = f"https://www.sec.gov/Archives/edgar/data/{cik_ink}/{accession_nodash}/{primary_doc}"
+            filing_link = (
+                f"https://www.sec.gov/Archives/edgar/data/"
+                f"{cik_ink}/{accession_nodash}/{primary_doc}"
+            )
 
             return {
                 "form": form, 
@@ -103,9 +112,9 @@ def fetch_latest_high_signal_filing(cik):
     return None 
 
 # ===========================
-# Main
+# Alert mode
 # ===========================
-def main():
+def run_alert_mode():
     watchlist = load_watchlist()
     state = load_state() 
 
@@ -125,6 +134,7 @@ def main():
 
         if latest_filing is None:
             print(f"No high-signal filings found for {ticker}.\n")
+            time.sleep(1)
             continue
 
         previous_filing = state.get(ticker) 
@@ -138,21 +148,21 @@ def main():
             print(f"Previous: {previous_filing}")
             print(f"Current: {latest_filing}")
 
-        # Only collect alerts here
-        new_alerts.append({
-            "ticker": ticker,
-            "name": name,
-            "previous": previous_filing,  
-            "current": latest_filing
-        })
+            # Only collect alerts here
+            new_alerts.append({
+                "ticker": ticker,
+                "name": name,
+                "previous": previous_filing,  
+                "current": latest_filing
+            })
 
-        # Update state for this stock
-        state[ticker] = latest_filing
+            state[ticker] = latest_filing    # Update state for this stock
 
         print()
+        time.sleep(1)
 
-    # Save updated state ONCE after the loop
-    save_state(state)
+    save_state(state)   # Save updated state ONCE after the loop
+
     # Send one comnbined email if anything new
     if new_alerts:
         subject = f"[SEC Alerts]{len(new_alerts)} stock(s) with new filing(s)"
@@ -175,6 +185,61 @@ def main():
         print("Email sent successfully")
     else:
         print("No new filings across the watchlist.")
+
+# ===========================
+# Digest mode
+# ===========================
+def run_digest_mode():
+    watchlist = load_watchlist()
+
+    digest_date = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
+    subject = f"[Daily Digest (digest_date)] SEC filing summary"
+
+    print("Building daily digest ...\n")
+
+    lines = []
+    lines.append(f"Daily SEC filing summary for {digest_date}\n")
+
+    for company in watchlist:
+        ticker = company["ticker"]
+        name = company["name"]
+        cik = company["cik"]
+
+        print(f"Digesting {ticker} ({name}) ...")
+
+        latest_filing = fetch_latest_high_signal_filing(cik)
+
+        if latest_filing is None:
+            lines.append(f"{ticker} - ({name})")
+            lines.append("Latest:  No high-signal filings found/ request failed")
+            lines.append("")
+            time.sleep(1)
+            continue
+
+        lines.append(f"{ticker} - ({name})")
+        lines.append(
+            f"  Latest: {latest_filing['form']} on {latest_filing['date']}"
+        )
+        lines.append(f"  Link: {latest_filing['link']}")
+        lines.append("")
+
+        time.sleep(1)
+
+    body = "\n".join(lines)
+
+    send_email(subject, body)
+    print("Daily digest email sent successfully!")
+
+
+# ===========================
+# Main
+# ===========================
+def main():
+    if RUN_MODE == "digest":
+        run_digest_mode()
+    else:
+        run_alert_mode()
+
 
 if __name__ == "__main__":
     main()
