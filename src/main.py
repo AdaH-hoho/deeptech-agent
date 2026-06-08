@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 import smtplib
 import yaml
+import feedparser 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart 
 
@@ -16,6 +17,7 @@ from email.mime.multipart import MIMEMultipart
 # ===========================
 
 WATCHLIST_FILE = "watchlist.yaml"
+FEEDS_FILE = "feeds.yaml"
 STATE_FILE = "state/last_seen.json"
 
 SMTP_HOST = "smtp.gmail.com"
@@ -37,6 +39,33 @@ def load_watchlist():
         data = yaml.safe_load(f)
     return data["tickers"]
 
+def load_feeds():
+    with open(FEEDS_FILE, "r") as f: 
+        data = yaml.safe_load(f)
+    return data["themes"]
+
+
+def fetch_rss_items():
+    themes = load_feeds()
+    results = {}
+
+    for theme, urls in themes.items():
+        results[theme] = []
+
+        for url in urls: 
+            parsed = feedparser.parse(url)
+
+            for entry in parsed.entries[:5]:
+                item = {
+                    "title": entry.get("title", "No title"),
+                    "link": entry.get("link", ""),
+                    "published": entry.get("published", "No published date"),
+                }
+                results[theme].append(item)
+
+    return results
+
+
 def load_state():
     state_path = Path(STATE_FILE)
     if not state_path.exists():
@@ -54,6 +83,16 @@ def save_state(state):
 # Email Function
 # ===========================
 def send_email(subject, body):
+    print("DEBUG SMTP_USER =", repr(SMTP_USER))
+    print("DEBUG SMTP_PASS loaded =", SMTP_PASS is not None)
+    print("DEBUG TO_EMAIL =", repr(TO_EMAIL))
+
+    if not SMTP_USER or not SMTP_PASS or not TO_EMAIL:
+        raise ValueError(
+            "Missing email environment variable(s)"
+            "Click SMTP_USER, SMTP_PASS, and T)_EMAIL."
+        )
+    
     msg = MIMEMultipart()
     msg["From"] = SMTP_USER
     msg["To"] = TO_EMAIL
@@ -77,7 +116,12 @@ def fetch_latest_high_signal_filing(cik):
         "Host": "data.sec.gov",
     }
     
-    response = requests.get(url, headers=headers, timeout=30)
+    for _ in range(2):  # Retry up to 3 times
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 200:
+            break
+        time.sleep(1)
+    
     
     if response.status_code != 200:
         print(f"SEC request failed for CIK {cik}: {response.status_code}")
@@ -171,7 +215,7 @@ def run_alert_mode():
         lines.append("New high-signal SEC filings detected:\n")
 
         for alert in new_alerts:
-            lines.append(f"{alert['ticker']} - ({alert['name']})")
+            lines.append(f"==={alert['ticker']} ({alert['name']})===")
             lines.append(
                 f"  Current: {alert['current']['form']} on {alert['current']['date']}"
             )
@@ -191,9 +235,11 @@ def run_alert_mode():
 # ===========================
 def run_digest_mode():
     watchlist = load_watchlist()
+    state = load_state()
+    rss_items = fetch_rss_items()
 
     digest_date = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
-    subject = f"[Daily Digest (digest_date)] SEC filing summary"
+    subject = f"[Daily Digest {digest_date}] SEC Filing Summary & Industry News"
 
     print("Building daily digest ...\n")
 
@@ -208,22 +254,50 @@ def run_digest_mode():
         print(f"Digesting {ticker} ({name}) ...")
 
         latest_filing = fetch_latest_high_signal_filing(cik)
+        previous = state.get(ticker)
+        if previous != latest_filing:
+            status = "NEW Today✅"
+        else: 
+            status = "unchanged"
 
         if latest_filing is None:
-            lines.append(f"{ticker} - ({name})")
+            lines.append(f"==={ticker} ({name})===")
             lines.append("Latest:  No high-signal filings found/ request failed")
             lines.append("")
             time.sleep(1)
             continue
 
-        lines.append(f"{ticker} - ({name})")
+        lines.append(f"==={ticker} ({name})===")
         lines.append(
             f"  Latest: {latest_filing['form']} on {latest_filing['date']}"
         )
+        lines.append(f"  Status: {status}")
         lines.append(f"  Link: {latest_filing['link']}")
         lines.append("")
 
         time.sleep(1)
+
+    if len(lines) <=1: 
+        print("Digest empty - skipping email")
+        return
+
+    lines.append("=== Industry RSS Summary ===")
+    lines.append("")
+
+    for theme, items in rss_items.items():
+        lines.append(f"[{theme.upper()}]")
+
+        if not items: 
+            lines.append("No items found.")
+            lines.append("")
+            continue
+
+        for item in items[:10]:
+            lines.append(f"-{item['title']}")
+            lines.append(f" Link{item['link']}")
+            lines.append(f"")
+        
+        lines.append("")
 
     body = "\n".join(lines)
 

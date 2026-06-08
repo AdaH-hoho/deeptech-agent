@@ -1,0 +1,11 @@
+themes:
+  biotech: 
+    - "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.html"
+    - "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/drugs/rss.xml"
+
+  space: 
+    - "https://spacenews.com/feed/"
+
+  energy: 
+    - "https://www.iea.org/news"
+    
