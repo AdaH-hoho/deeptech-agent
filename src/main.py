@@ -44,6 +44,45 @@ def load_feeds():
         data = yaml.safe_load(f)
     return data["themes"]
 
+def clean_summary(text, max_length=600, max_sentences=5):
+    import re
+    from html import unescape
+
+    if not text:
+        return "No highlights available."
+    
+    #Remove HTML tags
+    text = re.sub(r"<[^>]>", "", text)
+
+    #Convert HTML entities
+    text = unescape(text)
+
+    #Add spaces after punctuation if missing
+    text = re.sub(r"([.,;:!?])([A-Za-z])", r"\1\2", text)
+
+    #Normalize whitespace
+    text = re.sub(r"\s+", "", text). strip()
+
+    #If claeaning removed everythibng 
+    if not text: 
+        return "No hightlights available. "
+
+    #Split into sentences
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+
+    #Keep first 1-2 sentences
+    summary = "".join(sentences[:max_sentences]).strip()
+
+    #Fallback if splitting didn't work well
+    if not summary: 
+        summary = text
+
+    #Still cap excessive length
+    if len(summary) > max_length:
+        summary = summary[:max_length].rstrip() + "..."
+
+    return summary
+
 
 def fetch_rss_items():
     themes = load_feeds()
@@ -56,10 +95,18 @@ def fetch_rss_items():
             parsed = feedparser.parse(url)
 
             for entry in parsed.entries[:5]:
+                raw_summary = (
+                    entry.get("summary")
+                    or entry.get("description")
+                    or entry.get("subtitle")
+                    or ""
+                )
+
                 item = {
                     "title": entry.get("title", "No title"),
                     "link": entry.get("link", ""),
                     "published": entry.get("published", "No published date"),
+                    "summary": clean_summary(raw_summary)if raw_summary else "No highlights available."
                 }
                 results[theme].append(item)
 
@@ -82,11 +129,7 @@ def save_state(state):
 # ===========================
 # Email Function
 # ===========================
-def send_email(subject, body):
-    print("DEBUG SMTP_USER =", repr(SMTP_USER))
-    print("DEBUG SMTP_PASS loaded =", SMTP_PASS is not None)
-    print("DEBUG TO_EMAIL =", repr(TO_EMAIL))
-
+def send_email(subject, body, is_html=False):
     if not SMTP_USER or not SMTP_PASS or not TO_EMAIL:
         raise ValueError(
             "Missing email environment variable(s)"
@@ -97,7 +140,11 @@ def send_email(subject, body):
     msg["From"] = SMTP_USER
     msg["To"] = TO_EMAIL
     msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
+
+    if is_html:
+        msg.attach(MIMEText(body, "html"))
+    else:
+        msg.attach(MIMEText(body, "plain"))
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
         server.ehlo()
@@ -243,8 +290,8 @@ def run_digest_mode():
 
     print("Building daily digest ...\n")
 
-    lines = []
-    lines.append(f"Daily SEC filing summary for {digest_date}\n")
+    html_parts = []
+    html_parts.append(f"<h2 style='font-family: Arial, sans-serif; margin-bottom: 20px; text-align: left;'>Daily Digest - {digest_date}</h2>")
 
     for company in watchlist:
         ticker = company["ticker"]
@@ -255,53 +302,49 @@ def run_digest_mode():
 
         latest_filing = fetch_latest_high_signal_filing(cik)
         previous = state.get(ticker)
-        if previous != latest_filing:
-            status = "NEW Today✅"
-        else: 
-            status = "unchanged"
 
-        if latest_filing is None:
-            lines.append(f"==={ticker} ({name})===")
-            lines.append("Latest:  No high-signal filings found/ request failed")
-            lines.append("")
+        if latest_filing is None: 
+            html_parts.append(f"<h3 style='font-family: Arial; sans-serif; margin-top: 24px; margin-bottom: 10px; text-align: left;'>{ticker}({name})</h3>")
+            html_parts.append("<p style='font-family: Arial; sans-serif; font-size: 15px; line-height: 1.7; margin: 0 0 14px 0; text-align: left;'>No high-signal filing found / request failed.</p>")
+
             time.sleep(1)
             continue
 
-        lines.append(f"==={ticker} ({name})===")
-        lines.append(
-            f"  Latest: {latest_filing['form']} on {latest_filing['date']}"
+        if previous != latest_filing:
+            status = "NEW since last alert ✅"
+        else: 
+            status = "unchanged"
+
+        html_parts.append(f"<h3 style='font-family: Arial; sans-serif; margin-top: 24px; margin-bottom: 10px; text-align: left;'>{ticker}({name})</h3>")
+        html_parts.append(
+            f"<p style='font-family: Arial; sans-serif; font-size: 15px; line-height: 1.7; margin: 0 0 14px 0; text-align: left;'>"
+            f"<b>Latest:</b>{latest_filing['form']} on {latest_filing['date']}<br>"
+            f"<b>Status:</b>{status}<br>"
+            f"<b>Link:</b><a href='{latest_filing['link']}'>{latest_filing['link']}</a>"
+            f"</p>"
         )
-        lines.append(f"  Status: {status}")
-        lines.append(f"  Link: {latest_filing['link']}")
-        lines.append("")
 
         time.sleep(1)
 
-    if len(lines) <=1: 
-        print("Digest empty - skipping email")
-        return
-
-    lines.append("=== Industry RSS Summary ===")
-    lines.append("")
+    # RSS section
+    html_parts.append("<h2>Industry RSS Summary</h2>")
 
     for theme, items in rss_items.items():
-        lines.append(f"[{theme.upper()}]")
+        html_parts.append(f"<h3>{theme.upper()}</h3>")
 
         if not items: 
-            lines.append("No items found.")
-            lines.append("")
+            html_parts.append(f"<p>No items found.</p>")
             continue
 
         for item in items[:10]:
-            lines.append(f"-{item['title']}")
-            lines.append(f" Link{item['link']}")
-            lines.append(f"")
-        
-        lines.append("")
+            html_parts.append(
+                f"<p><a href='{item.get('link', '')}'><b>{item.get('title', 'No title')}</b></a><br>"
+                f" {item.get('summary', 'No highlights available.')}</p>"
+            )
 
-    body = "\n".join(lines)
 
-    send_email(subject, body)
+    body = "".join(html_parts)
+    send_email(subject, body, is_html=True)
     print("Daily digest email sent successfully!")
 
 
