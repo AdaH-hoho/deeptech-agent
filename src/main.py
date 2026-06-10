@@ -52,30 +52,32 @@ def clean_summary(text, max_length=600, max_sentences=5):
         return "No highlights available."
     
     #Remove HTML tags
-    text = re.sub(r"<[^>]>", "", text)
+    text = re.sub(r"<[^>]+>", " ", text)
 
     #Convert HTML entities
     text = unescape(text)
 
     #Add spaces after punctuation if missing
-    text = re.sub(r"([.,;:!?])([A-Za-z])", r"\1\2", text)
+    text = re.sub(r"([.,;:!?])([A-Za-z])", r"\1 \2", text)
+
+    #Add spaces between lowercase-uppercase transitions (helps glued words occasionally)
+    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
 
     #Normalize whitespace
-    text = re.sub(r"\s+", "", text). strip()
+    text = re.sub(r"\s+", " ", text). strip()
 
     #If claeaning removed everythibng 
     if not text: 
         return "No hightlights available. "
-
+    
     #Split into sentences
     sentences = re.split(r'(?<=[.!?])\s+', text)
 
-    #Keep first 1-2 sentences
-    summary = "".join(sentences[:max_sentences]).strip()
-
-    #Fallback if splitting didn't work well
-    if not summary: 
-        summary = text
+    #Default to 3 sentences, allow up to 5 if content is long
+    if len(sentences)<=3:
+        summary = " ".join(sentences)
+    else:
+        summary = " ".join(sentences[:5])
 
     #Still cap excessive length
     if len(summary) > max_length:
@@ -262,12 +264,17 @@ def run_alert_mode():
         lines.append("New high-signal SEC filings detected:\n")
 
         for alert in new_alerts:
-            lines.append(f"==={alert['ticker']} ({alert['name']})===")
-            lines.append(
-                f"  Current: {alert['current']['form']} on {alert['current']['date']}"
-            )
-            lines.append(f"  Link: {alert['current']['link']}")
-            lines.append(f"  Previous: {alert['previous']}")
+            lines.append(f"=== {alert['ticker']} ({alert['name']}) ===")
+            lines.append(f"Current: {alert['current']['form']} on {alert['current']['date']}")
+            lines.append(f"Link   : {alert['current']['link']}")
+            
+            previous = alert.get("previous")
+
+            if previous: 
+                lines.append(f"Previous: {previous.get('form', 'N/A')} on {previous.get('date', 'N/A')}")
+            else: 
+                lines.append("Previous: None")
+            
             lines.append("")
 
         body = "\n".join(lines)
