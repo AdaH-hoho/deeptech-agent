@@ -28,11 +28,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/59478/000119312526232707/d148580d8k.htm"
   },
   "PLTR": {
-    "form": "8-K",
-    "date": "2026-06-09",
-    "accession": "0001321655-26-000033",
-    "primary_doc": "pltr-20260603.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000033/pltr-20260603.htm"
+    "form": "10-Q",
+    "date": "2026-05-05",
+    "accession": "0001321655-26-000028",
+    "primary_doc": "pltr-20260331.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000028/pltr-20260331.htm"
   },
   "TEM": {
     "form": "8-K",
