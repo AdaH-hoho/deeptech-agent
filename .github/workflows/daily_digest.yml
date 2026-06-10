@@ -10,7 +10,7 @@ env:
 
 jobs:
   run-daily-digest:
-    runs-on: ubbuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
