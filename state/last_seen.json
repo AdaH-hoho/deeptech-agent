@@ -7,18 +7,18 @@
     "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000060/nvda-20260628.htm"
   },
   "AAPL": {
-    "form": "8-K",
-    "date": "2026-07-30",
-    "accession": "0000320193-26-000018",
-    "primary_doc": "aapl-20260730.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000018/aapl-20260730.htm"
+    "form": "10-Q",
+    "date": "2026-07-31",
+    "accession": "0000320193-26-000020",
+    "primary_doc": "aapl-20260627.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/aapl-20260627.htm"
   },
   "MRNA": {
     "form": "8-K",
-    "date": "2026-07-08",
-    "accession": "0001682852-26-000134",
-    "primary_doc": "mrna-20260706.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000134/mrna-20260706.htm"
+    "date": "2026-07-31",
+    "accession": "0001682852-26-000147",
+    "primary_doc": "mrna-20260731.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000147/mrna-20260731.htm"
   },
   "LLY": {
     "form": "8-K",
