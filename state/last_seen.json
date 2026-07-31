@@ -14,11 +14,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/aapl-20260627.htm"
   },
   "MRNA": {
-    "form": "8-K",
+    "form": "10-Q",
     "date": "2026-07-31",
-    "accession": "0001682852-26-000147",
-    "primary_doc": "mrna-20260731.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000147/mrna-20260731.htm"
+    "accession": "0001682852-26-000150",
+    "primary_doc": "mrna-20260630.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000150/mrna-20260630.htm"
   },
   "LLY": {
     "form": "8-K",
