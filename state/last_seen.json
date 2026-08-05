@@ -21,11 +21,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000150/mrna-20260630.htm"
   },
   "LLY": {
-    "form": "8-K",
+    "form": "10-Q",
     "date": "2026-08-05",
-    "accession": "0000059478-26-000077",
-    "primary_doc": "lly-20260805.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/59478/000005947826000077/lly-20260805.htm"
+    "accession": "0000059478-26-000081",
+    "primary_doc": "lly-20260630.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/59478/000005947826000081/lly-20260630.htm"
   },
   "PLTR": {
     "form": "10-Q",
