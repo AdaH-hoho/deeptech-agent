@@ -7,11 +7,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm"
   },
   "AAPL": {
-    "form": "8-K",
-    "date": "2026-11-02",
-    "accession": "0000320193-26-000024",
-    "primary_doc": "aapl-20261102.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000024/aapl-20261102.htm"
+    "form": "10-K",
+    "date": "2026-11-03",
+    "accession": "0000320193-26-000026",
+    "primary_doc": "aapl-20260926.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
   },
   "MRNA": {
     "form": "8-K",
@@ -28,11 +28,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/59478/000005947826000108/lly-20260930.htm"
   },
   "PLTR": {
-    "form": "8-K",
-    "date": "2026-11-02",
-    "accession": "0001321655-26-000045",
-    "primary_doc": "pltr-20261102.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000045/pltr-20261102.htm"
+    "form": "10-Q",
+    "date": "2026-11-03",
+    "accession": "0001321655-26-000048",
+    "primary_doc": "pltr-20260930.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000048/pltr-20260930.htm"
   },
   "TEM": {
     "form": "10-Q",
