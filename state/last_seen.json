@@ -7,11 +7,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm"
   },
   "AAPL": {
-    "form": "10-K",
-    "date": "2026-11-03",
-    "accession": "0000320193-26-000026",
-    "primary_doc": "aapl-20260926.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+    "form": "8-K",
+    "date": "2026-11-09",
+    "accession": "0001140361-26-042798",
+    "primary_doc": "ef20085077_8k.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042798/ef20085077_8k.htm"
   },
   "MRNA": {
     "form": "10-Q",
