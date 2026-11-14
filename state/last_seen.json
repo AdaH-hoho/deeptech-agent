@@ -14,11 +14,11 @@
     "link": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042798/ef20085077_8k.htm"
   },
   "MRNA": {
-    "form": "10-Q",
-    "date": "2026-11-06",
-    "accession": "0001682852-26-000197",
-    "primary_doc": "mrna-20260930.htm",
-    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000197/mrna-20260930.htm"
+    "form": "8-K",
+    "date": "2026-11-13",
+    "accession": "0001682852-26-000205",
+    "primary_doc": "mrna-20261113.htm",
+    "link": "https://www.sec.gov/Archives/edgar/data/1682852/000168285226000205/mrna-20261113.htm"
   },
   "LLY": {
     "form": "10-Q",
